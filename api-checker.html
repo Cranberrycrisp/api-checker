@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Key 批量检测</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            color: #1a202c;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
+        }
+
+        .card h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #2d3748;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #4a5568;
+        }
+
+        .form-group input, .form-group select {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+            background: white;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group select {
+            cursor: pointer;
+        }
+
+        .form-group input[readonly] {
+            background: #f7fafc;
+            color: #4a5568;
+        }
+
+        /* 修复textarea样式 */
+        .textarea-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .textarea-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #4a5568;
+        }
+
+        .textarea-group textarea {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            height: 160px;
+            resize: vertical;
+            transition: border-color 0.2s;
+            background: #fafbfc;
+            line-height: 1.5;
+        }
+
+        .textarea-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+        }
+
+        .textarea-group textarea::placeholder {
+            color: #a0aec0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .textarea-hint {
+            font-size: 0.8rem;
+            color: #718096;
+            margin-top: 6px;
+        }
+
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            width: 100%;
+            margin-bottom: 24px;
+            font-size: 1rem;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-small:hover {
+            background: #38a169;
+        }
+
+        .btn-secondary {
+            background: #edf2f7;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .result-section {
+            margin-bottom: 20px;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .result-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 12px;
+        }
+
+        .badge-success { background: #c6f6d5; color: #2f855a; }
+        .badge-error { background: #fed7d7; color: #c53030; }
+        .badge-warning { background: #faf089; color: #b7791f; }
+
+        .result-content {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 0.85rem;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .result-content:empty::after {
+            content: '等待检测结果...';
+            color: #a0aec0;
+            font-style: italic;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .error-item {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .error-token {
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            background: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-bottom: 6px;
+            word-break: break-all;
+        }
+
+        .error-message {
+            color: #c53030;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .support-info {
+            background: linear-gradient(135deg, #e6fffa, #b2f5ea);
+            border-left: 4px solid #38b2ac;
+            padding: 18px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .support-info h3 {
+            color: #2c7a7b;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .support-list {
+            color: #285e61;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .support-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 10px;
+        }
+
+        .support-category {
+            background: rgba(255,255,255,0.4);
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .support-category h4 {
+            color: #2c7a7b;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .support-category ul {
+            list-style: none;
+            font-size: 0.8rem;
+        }
+
+        .support-category ul li {
+            padding: 2px 0;
+        }
+
+        .support-category ul li::before {
+            content: '✓ ';
+            color: #38a169;
+            font-weight: bold;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .notification.success { background: #48bb78; }
+        .notification.error { background: #f56565; }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .form-grid, .support-grid {
+                grid-template-columns: 1fr;
+            }
+            .result-actions {
+                flex-direction: column;
+            }
+            .container {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🔑 API Key 批量检测</h1>
+            <p>支持主流 AI 服务的 API 密钥批量验证</p>
+        </header>
+
+        <!-- 支持格式说明 -->
+        <div class="support-info">
+            <h3>🌐 支持的 AI 服务</h3>
+            <p style="margin-bottom: 12px;">本工具支持以下 AI 服务的原生 OpenAI 格式 API：</p>
+            <div class="support-grid">
+                <div class="support-category">
+                    <h4>官方原生支持</h4>
+                    <ul>
+                        <li>OpenAI</li>
+                        <li>Google Gemini</li>
+                        <li>Azure OpenAI</li>
+                        <li>DeepSeek</li>
+                    </ul>
+                </div>
+                <div class="support-category">
+                    <h4>聚合平台</h4>
+                    <ul>
+                        <li>OpenRouter</li>
+                        <li>SiliconFlow</li>
+                        <li>Moonshot (月之暗面)</li>
+                        <li>智谱 ChatGLM</li>
+                    </ul>
+                </div>
+                <div class="support-category">
+                    <h4>代理服务</h4>
+                    <ul>
+                        <li>OneAPI</li>
+                        <li>New API</li>
+                        <li>FastGPT</li>
+                        <li>ChatGPT-Next-Web</li>
+                    </ul>
+                </div>
+                <div class="support-category">
+                    <h4>自建部署</h4>
+                    <ul>
+                        <li>Ollama (API模式)</li>
+                        <li>LocalAI</li>
+                        <li>vLLM</li>
+                        <li>Xinference</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 配置 -->
+        <div class="card">
+            <h2>⚙️ 接口配置</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="apiProvider">AI 服务商</label>
+                    <select id="apiProvider" onchange="onProviderChange()">
+                        <option value="custom">🔧 自定义</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="gemini">Google Gemini</option>
+                        <option value="azure">Azure OpenAI</option>
+                        <option value="deepseek">DeepSeek</option>
+                        <option value="openrouter">OpenRouter</option>
+                        <option value="siliconflow">SiliconFlow</option>
+                        <option value="moonshot">Moonshot AI</option>
+                        <option value="chatglm">智谱 ChatGLM</option>
+                        <option value="oneapi">OneAPI</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="testModel">测试模型</label>
+                    <input type="text" id="testModel" value="gpt-3.5-turbo"
+                           placeholder="gpt-3.5-turbo">
+                </div>
+            </div>
+            <div style="margin-top: 16px;">
+                <div class="form-group">
+                    <label for="apiBaseUrl">API 基础地址</label>
+                    <input type="text" id="apiBaseUrl" value="https://api.openai.com/v1"
+                           placeholder="https://api.openai.com/v1">
+                </div>
+            </div>
+        </div>
+
+        <!-- 输入 -->
+        <div class="card">
+            <div class="textarea-group">
+                <label for="tokens">📝 API Keys 输入</label>
+                <textarea id="tokens" placeholder="请输入 API Keys，支持多种格式：
+
+• 每行一个密钥
+sk-1234567890abcdef
+sk-abcdef1234567890
+
+• 逗号分隔
+sk-1234567890abcdef,sk-abcdef1234567890
+
+• 空格分隔
+sk-1234567890abcdef sk-abcdef1234567890
+
+系统会自动去重并验证每个密钥的有效性"></textarea>
+                <div class="textarea-hint">
+                    💡 支持混合格式输入，系统会智能识别并处理
+                </div>
+            </div>
+        </div>
+
+        <button id="checkButton" class="btn btn-primary" onclick="checkTokens()">
+            <span>🚀 开始验证</span>
+        </button>
+
+        <!-- 结果 -->
+        <div class="card result-section">
+            <div class="result-header">
+                <h3><span style="color: #48bb78;">✓</span> 有效密钥</h3>
+                <span id="validBadge" class="badge badge-success" style="display: none;">0 个</span>
+            </div>
+            <div id="validResults" class="result-content"></div>
+            <div class="result-actions" id="validActions" style="display: none;">
+                <button class="btn btn-small" onclick="copyTokens()">📋 复制 (换行)</button>
+                <button class="btn btn-small btn-secondary" onclick="copyTokensComma()">📋 复制 (逗号)</button>
+            </div>
+        </div>
+
+        <div class="card result-section">
+            <div class="result-header">
+                <h3><span style="color: #f56565;">✗</span> 失效密钥</h3>
+                <span id="invalidBadge" class="badge badge-error" style="display: none;">0 个</span>
+            </div>
+            <div id="invalidResults" class="result-content"></div>
+        </div>
+
+        <div class="card result-section">
+            <div class="result-header">
+                <h3><span style="color: #ed8936;">⚠</span> 重复密钥</h3>
+                <span id="duplicateBadge" class="badge badge-warning" style="display: none;">0 个</span>
+            </div>
+            <div id="duplicateResults" class="result-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // API 服务商配置
+        const apiProviders = {
+            openai: {
+                url: 'https://api.openai.com/v1',
+                model: 'gpt-3.5-turbo'
+            },
+            gemini: {
+                url: 'https://generativelanguage.googleapis.com/v1beta',
+                model: 'gemini-2.5-flash'
+            },
+            azure: {
+                url: 'https://your-resource.openai.azure.com/openai/deployments/your-deployment',
+                model: 'gpt-35-turbo'
+            },
+            deepseek: {
+                url: 'https://api.deepseek.com/v1',
+                model: 'deepseek-chat'
+            },
+            openrouter: {
+                url: 'https://openrouter.ai/api/v1',
+                model: 'openai/gpt-3.5-turbo'
+            },
+            siliconflow: {
+                url: 'https://api.siliconflow.cn/v1',
+                model: 'deepseek-ai/deepseek-chat'
+            },
+            moonshot: {
+                url: 'https://api.moonshot.cn/v1',
+                model: 'moonshot-v1-8k'
+            },
+            chatglm: {
+                url: 'https://open.bigmodel.cn/api/paas/v4',
+                model: 'glm-4'
+            },
+            oneapi: {
+                url: 'http://localhost:3000/v1',
+                model: 'gpt-3.5-turbo'
+            }
+        };
+
+        // 服务商选择变化
+        function onProviderChange() {
+            const provider = document.getElementById('apiProvider').value;
+            const urlInput = document.getElementById('apiBaseUrl');
+            const modelInput = document.getElementById('testModel');
+
+            if (provider === 'custom') {
+                urlInput.readOnly = false;
+                urlInput.style.background = 'white';
+                return;
+            }
+
+            if (apiProviders[provider]) {
+                urlInput.value = apiProviders[provider].url;
+                modelInput.value = apiProviders[provider].model;
+                urlInput.readOnly = true;
+                urlInput.style.background = '#f7fafc';
+            }
+        }
+
+        // 恢复设置
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedProvider = localStorage.getItem('apiProvider');
+            const savedUrl = localStorage.getItem('apiBaseUrl');
+            const savedModel = localStorage.getItem('testModel');
+
+            if (savedProvider) {
+                document.getElementById('apiProvider').value = savedProvider;
+                onProviderChange();
+            }
+
+            if (savedUrl && savedProvider === 'custom') {
+                document.getElementById('apiBaseUrl').value = savedUrl;
+            }
+
+            if (savedModel) {
+                document.getElementById('testModel').value = savedModel;
+            }
+        });
+
+        // 通知
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        async function checkTokens() {
+            const tokensTextarea = document.getElementById('tokens');
+            const checkButton = document.getElementById('checkButton');
+            const apiProvider = document.getElementById('apiProvider').value;
+            const apiBaseUrl = document.getElementById('apiBaseUrl').value.trim();
+            const testModel = document.getElementById('testModel').value.trim();
+
+            if (!apiBaseUrl || !testModel) {
+                showNotification('请填写完整的接口配置', 'error');
+                return;
+            }
+
+            if (!apiBaseUrl.startsWith('http')) {
+                showNotification('API 地址格式错误，请以 http:// 或 https:// 开头', 'error');
+                return;
+            }
+
+            // 保存设置
+            localStorage.setItem('apiProvider', apiProvider);
+            localStorage.setItem('apiBaseUrl', apiBaseUrl);
+            localStorage.setItem('testModel', testModel);
+
+            const inputText = tokensTextarea.value.trim();
+            if (!inputText) {
+                showNotification('请输入至少一个 API Key', 'error');
+                return;
+            }
+
+            // 处理输入
+            const allTokens = inputText
+                .replace(/[\n,]+/g, ' ')
+                .split(' ')
+                .map(t => t.trim())
+                .filter(t => t !== '');
+
+            // 检测重复
+            const tokenCount = new Map();
+            const duplicateTokens = new Set();
+
+            allTokens.forEach(token => {
+                tokenCount.set(token, (tokenCount.get(token) || 0) + 1);
+                if (tokenCount.get(token) > 1) {
+                    duplicateTokens.add(token);
+                }
+            });
+
+            const uniqueTokens = [...new Set(allTokens)];
+
+            // 更新界面
+            checkButton.disabled = true;
+            checkButton.innerHTML = '<div class="spinner"></div><span>验证中...</span>';
+
+            // 清空结果
+            document.getElementById('validResults').textContent = '';
+            document.getElementById('invalidResults').innerHTML = '';
+            document.getElementById('duplicateResults').textContent =
+                duplicateTokens.size > 0
+                    ? `发现重复密钥 ${duplicateTokens.size} 个：\n${[...duplicateTokens].join('\n')}\n\n已自动去重，实际检测 ${uniqueTokens.length} 个唯一密钥`
+                    : `未发现重复密钥\n将检测 ${uniqueTokens.length} 个唯一密钥`;
+
+            updateBadges(0, 0, duplicateTokens.size);
+
+            try {
+                // 执行检测
+                const results = await Promise.allSettled(
+                    uniqueTokens.map(token =>
+                        Promise.race([
+                            checkSingleToken(token, apiBaseUrl, testModel),
+                            new Promise((_, reject) =>
+                                setTimeout(() => reject(new Error('请求超时')), 30000)
+                            )
+                        ])
+                    )
+                );
+
+                const validTokens = [];
+                const invalidTokens = [];
+
+                results.forEach((result, index) => {
+                    if (result.status === 'fulfilled' && result.value.isValid) {
+                        validTokens.push(result.value.token);
+                    } else {
+                        const error = result.status === 'fulfilled'
+                            ? result.value
+                            : { token: uniqueTokens[index], message: result.reason.message || '检测失败' };
+                        invalidTokens.push(error);
+                    }
+                });
+
+                // 显示结果
+                document.getElementById('validResults').textContent = validTokens.join('\n');
+
+                const invalidContainer = document.getElementById('invalidResults');
+                invalidContainer.innerHTML = '';
+                if (invalidTokens.length > 0) {
+                    invalidTokens.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'error-item';
+                        div.innerHTML = `
+                            <div class="error-token">${item.token}</div>
+                            <div class="error-message">${item.message}</div>
+                        `;
+                        invalidContainer.appendChild(div);
+                    });
+                } else {
+                    invalidContainer.textContent = '暂无失效密钥';
+                }
+
+                updateBadges(validTokens.length, invalidTokens.length, duplicateTokens.size);
+
+                if (validTokens.length > 0) {
+                    document.getElementById('validActions').style.display = 'flex';
+                    showNotification(`✅ 检测完成！发现 ${validTokens.length} 个有效密钥`);
+                } else {
+                    showNotification('❌ 检测完成，未发现有效密钥', 'error');
+                }
+
+            } catch (error) {
+                showNotification(`检测出错: ${error.message}`, 'error');
+            } finally {
+                checkButton.disabled = false;
+                checkButton.innerHTML = '<span>🚀 开始验证</span>';
+            }
+        }
+
+        function updateBadges(valid, invalid, duplicate) {
+            const badges = [
+                ['validBadge', valid],
+                ['invalidBadge', invalid],
+                ['duplicateBadge', duplicate]
+            ];
+
+            badges.forEach(([id, count]) => {
+                const badge = document.getElementById(id);
+                badge.textContent = `${count} 个`;
+                badge.style.display = 'inline-block';
+            });
+        }
+
+        async function checkSingleToken(token, apiBaseUrl, testModel) {
+            const url = `${apiBaseUrl.replace(/\/$/, '')}/chat/completions`;
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: testModel,
+                        messages: [{ role: "user", content: "hi" }],
+                        max_tokens: 1,
+                        stream: false
+                    }),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (response.ok) {
+                    return { token, isValid: true };
+                } else {
+                    let errorMessage;
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error?.message || errorData.message || `HTTP ${response.status}`;
+                    } catch {
+                        errorMessage = `HTTP ${response.status} - ${response.statusText}`;
+                    }
+                    return { token, isValid: false, message: errorMessage };
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    return { token, isValid: false, message: '请求超时' };
+                }
+                return { token, isValid: false, message: `网络错误: ${error.message}` };
+            }
+        }
+
+        function copyTokens() {
+            const text = document.getElementById('validResults').textContent.trim();
+            if (!text) return showNotification('没有可复制的内容', 'error');
+
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('✅ 有效密钥已复制到剪贴板 (换行分隔)');
+            }).catch(() => {
+                showNotification('复制失败，请手动选择复制', 'error');
+            });
+        }
+
+        function copyTokensComma() {
+            const text = document.getElementById('validResults').textContent.trim();
+            if (!text) return showNotification('没有可复制的内容', 'error');
+
+            const tokens = text.split('\n').filter(t => t);
+            navigator.clipboard.writeText(tokens.join(',')).then(() => {
+                showNotification('✅ 有效密钥已复制到剪贴板 (逗号分隔)');
+            }).catch(() => {
+                showNotification('复制失败，请手动选择复制', 'error');
+            });
+        }
+    </script>
+</body>
+</html>
